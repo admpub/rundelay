@@ -28,14 +28,8 @@ func (d *RunDelay[T]) Init(delay time.Duration, f func(T) error) {
 	d.delay = delay
 }
 
-func (d *RunDelay[T]) safeExec(v T) {
-	defer recover()
-	d.chDone <- d.exec(v)
-}
-
 func (d *RunDelay[T]) run(v T) {
-	d.safeExec(v)
-
+	d.chDone <- d.exec(v)
 	<-d.chExec
 }
 
@@ -44,7 +38,7 @@ func (d *RunDelay[T]) delayRun(v T) {
 		d.run(v)
 		return
 	}
-	t := time.NewTimer(d.delay)
+	t := time.NewTicker(d.delay)
 	end := time.Now().Add(d.delay)
 	defer t.Stop()
 	for {
@@ -59,21 +53,23 @@ func (d *RunDelay[T]) delayRun(v T) {
 				d.recvNotify(v, end)
 			}
 		case tm := <-t.C:
-			if !tm.Before(end) {
+			if !tm.Before(end) { // tm >= end
 				d.run(v)
 				return
 			}
+
+			t.Reset(end.Sub(tm))
 		}
 	}
 }
 
 func (d *RunDelay[T]) Run(v T) bool {
+	for i, j := 0, len(d.chDone); i < j; i++ {
+		<-d.chDone
+	}
 	select {
 	case d.chNotify <- struct{}{}:
 	case d.chExec <- struct{}{}:
-		if len(d.chDone) == 1 {
-			<-d.chDone
-		}
 		d.delayRun(v)
 		return true
 	default:
