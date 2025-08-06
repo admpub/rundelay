@@ -14,15 +14,15 @@ import (
 )
 
 func main(){
-	delay := time.Second * 2
-	dr := rundelay.New(delay, func(v string) error{
+    delay := time.Second * 2
+    dr := rundelay.New(delay, func(v string) error{
         return nil
     })
     defer dr.Close()
 
     // ...
 
-    dr.Run(`test`) // 可以多次调用使用此代码且并发执行
+    dr.Run(`test`) // 可以多次调用此代码且并发执行
     // 返回结果为bool值, true代表启动新的延迟 hasRun := dr.Run(`test`)
 
     // ...
