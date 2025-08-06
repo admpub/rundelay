@@ -82,7 +82,8 @@ func (m *Multiple[T]) Done(k string) error {
 
 func (m *Multiple[T]) Close(k ...string) (err error) {
 	if len(k) > 0 {
-		return m.CloseByKey(k...)
+		m.CloseByKey(k...)
+		return
 	}
 	m.mu.Lock()
 	for k, v := range m.mp {
