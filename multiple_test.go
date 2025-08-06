@@ -10,6 +10,7 @@ import (
 func TestMultiple(t *testing.T) {
 	target := time.Now()
 	delay := time.Second * 2
+	delay = time.Millisecond * 600
 	m := NewMultiple(delay, func(i int) error {
 		execTime := time.Now()
 		t.Logf(`%d.========= test delay run: %v`, i, execTime.Format(time.RFC3339Nano))

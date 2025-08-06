@@ -36,11 +36,11 @@ func (m *Multiple[T]) set(k string, v RunDelayer[T]) {
 
 func (m *Multiple[T]) Delete(k string) {
 	if m.mu.TryLock() {
-		m.mu.Lock()
 		delete(m.mp, k)
-		m.mu.Lock()
+		m.mu.Unlock()
 		return
 	}
+
 	delete(m.mp, k)
 }
 
@@ -53,7 +53,11 @@ func (m *Multiple[T]) Run(k string, v T) bool {
 	m.mu.Lock()
 	val, ok := m.mp[k]
 	if !ok {
-		val = New(m.delay, m.exec)
+		val = New(m.delay, func(t T) (err error) {
+			err = m.exec(t)
+			//m.Delete(k)
+			return
+		})
 		m.mp[k] = val
 	}
 	m.mu.Unlock()

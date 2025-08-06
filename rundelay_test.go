@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func _TestRunDelay(t *testing.T) {
+func TestRunDelay(t *testing.T) {
 	target := time.Now()
 	var execTime time.Time
 	exec := func(i int) error {
@@ -15,7 +15,8 @@ func _TestRunDelay(t *testing.T) {
 		t.Logf(`%d.========= test delay run: %v`, i, execTime.Format(time.RFC3339Nano))
 		return nil
 	}
-	delay := time.Second * 2
+	delay := time.Second * 1
+	delay = time.Millisecond * 600
 	dr := New(delay, exec)
 	dr.recvNotify = func(i int, tgt time.Time) {
 		t.Logf(`%d. recv notify, new target: %v`, i, tgt.Format(time.RFC3339Nano))

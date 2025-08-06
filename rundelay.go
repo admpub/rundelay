@@ -28,7 +28,22 @@ func (d *RunDelay[T]) Init(delay time.Duration, f func(T) error) {
 	d.delay = delay
 }
 
+func (d *RunDelay[T]) safeExec(v T) {
+	defer recover()
+	d.chDone <- d.exec(v)
+}
+
+func (d *RunDelay[T]) run(v T) {
+	d.safeExec(v)
+
+	<-d.chExec
+}
+
 func (d *RunDelay[T]) delayRun(v T) {
+	if d.delay <= 0 {
+		d.run(v)
+		return
+	}
 	t := time.NewTimer(d.delay)
 	end := time.Now().Add(d.delay)
 	defer t.Stop()
@@ -45,13 +60,7 @@ func (d *RunDelay[T]) delayRun(v T) {
 			}
 		case tm := <-t.C:
 			if !tm.Before(end) {
-				d.chDone <- d.exec(v)
-
-				select {
-				case <-d.chExec:
-				default:
-				}
-
+				d.run(v)
 				return
 			}
 		}
@@ -63,10 +72,7 @@ func (d *RunDelay[T]) Run(v T) bool {
 	case d.chNotify <- struct{}{}:
 	case d.chExec <- struct{}{}:
 		if len(d.chDone) == 1 {
-			select {
-			case <-d.chDone:
-			default:
-			}
+			<-d.chDone
 		}
 		d.delayRun(v)
 		return true
@@ -77,10 +83,7 @@ func (d *RunDelay[T]) Run(v T) bool {
 
 func (d *RunDelay[T]) Done() error {
 	err := <-d.chDone
-	select {
-	case d.chDone <- nil:
-	default:
-	}
+	d.chDone <- nil
 	return err
 }
 
