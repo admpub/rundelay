@@ -5,13 +5,18 @@ import (
 	"time"
 )
 
-func NewMultiple[T any](delay time.Duration, f func(T) error) *Multiple[T] {
-	return &Multiple[T]{
+func NewMultiple[T any](delay time.Duration, f func(T) error, once ...bool) *Multiple[T] {
+	m := &Multiple[T]{
 		mp:    map[string]RunDelayer[T]{},
 		mu:    sync.RWMutex{},
 		delay: delay,
 		exec:  f,
+		once:  false,
 	}
+	if len(once) > 0 {
+		m.once = once[0]
+	}
+	return m
 }
 
 type Multiple[T any] struct {
@@ -19,6 +24,7 @@ type Multiple[T any] struct {
 	mu    sync.RWMutex
 	delay time.Duration
 	exec  func(T) error
+	once  bool
 }
 
 func (m *Multiple[T]) get(k string) (RunDelayer[T], bool) {
@@ -55,7 +61,9 @@ func (m *Multiple[T]) Run(k string, v T) bool {
 	if !ok {
 		val = New(m.delay, func(t T) (err error) {
 			err = m.exec(t)
-			//m.Delete(k)
+			if m.once {
+				m.Delete(k)
+			}
 			return
 		})
 		m.mp[k] = val
@@ -72,7 +80,10 @@ func (m *Multiple[T]) Done(k string) error {
 	return nil
 }
 
-func (m *Multiple[T]) Close() (err error) {
+func (m *Multiple[T]) Close(k ...string) (err error) {
+	if len(k) > 0 {
+		return m.CloseByKey(k...)
+	}
 	m.mu.Lock()
 	for k, v := range m.mp {
 		err = v.Close()
@@ -83,6 +94,17 @@ func (m *Multiple[T]) Close() (err error) {
 	}
 	m.mu.Unlock()
 	return
+}
+
+func (m *Multiple[T]) CloseByKey(k ...string) {
+	m.mu.Lock()
+	for _, _k := range k {
+		val, ok := m.mp[_k]
+		if ok {
+			val.Close()
+		}
+	}
+	m.mu.Unlock()
 }
 
 func (m *Multiple[T]) Range(cb func(string, RunDelayer[T])) error {

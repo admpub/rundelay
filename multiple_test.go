@@ -15,7 +15,7 @@ func TestMultiple(t *testing.T) {
 		execTime := time.Now()
 		t.Logf(`%d.========= test delay run: %v`, i, execTime.Format(time.RFC3339Nano))
 		return nil
-	})
+	}, true)
 	defer m.Close()
 
 	t.Logf(`test delay start: %v`, target.Format(time.RFC3339Nano))
