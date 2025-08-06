@@ -22,7 +22,7 @@ func main(){
 
     // ...
 
-	dr.Run(`test`) // 可以多次调用使用此代码且并发执行
+    dr.Run(`test`) // 可以多次调用使用此代码且并发执行
     // 返回结果为bool值, true代表启动新的延迟 hasRun := dr.Run(`test`)
 
     // ...
