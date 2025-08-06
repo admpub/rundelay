@@ -46,7 +46,12 @@ func (d *RunDelay[T]) delayRun(v T) {
 		case tm := <-t.C:
 			if !tm.Before(end) {
 				d.chDone <- d.exec(v)
-				<-d.chExec
+
+				select {
+				case <-d.chExec:
+				default:
+				}
+
 				return
 			}
 		}
@@ -58,7 +63,10 @@ func (d *RunDelay[T]) Run(v T) bool {
 	case d.chNotify <- struct{}{}:
 	case d.chExec <- struct{}{}:
 		if len(d.chDone) == 1 {
-			<-d.chDone
+			select {
+			case <-d.chDone:
+			default:
+			}
 		}
 		d.delayRun(v)
 		return true
@@ -69,7 +77,10 @@ func (d *RunDelay[T]) Run(v T) bool {
 
 func (d *RunDelay[T]) Done() error {
 	err := <-d.chDone
-	d.chDone <- nil
+	select {
+	case d.chDone <- nil:
+	default:
+	}
 	return err
 }
 

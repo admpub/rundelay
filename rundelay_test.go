@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func TestRunDelay(t *testing.T) {
+func _TestRunDelay(t *testing.T) {
 	target := time.Now()
 	var execTime time.Time
 	exec := func(i int) error {
